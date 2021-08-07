@@ -1,55 +1,93 @@
-import React, {Component} from 'react';
-import axios from 'axios';
-import './AppSearcher.sass';
-import SearchForm from './SearchForm/SearchForm';
-import ResultCard from './ResultCard/ResultCard';
+import React, { Component } from "react";
+import axios from "axios";
+import "./AppSearcher.sass";
+import SearchForm from "./SearchForm/SearchForm";
+import ResultCard from "./ResultCard/ResultCard";
 
-export default class AppSearcher extends Component
-{
+export default class AppSearcher extends Component {
   state = {
     cached: [],
-    results: []
-  }
+    results: [],
+    toggleElementId: null,
+  };
 
-  componentDidMount(){
-    axios.get('https://jsonplaceholder.typicode.com/posts')
-    .then(posts => posts.data)
-    .then(posts => {
-      axios.get('https://jsonplaceholder.typicode.com/users')
-      .then(users => users.data)
-      .then(users => {
-        posts.map(post => {
-          const user = users.find(user => user.id === post.userId);
-          post.username = user.name;
-          return post;
-        });
+  componentDidMount() {
+    axios
+      .get("https://jsonplaceholder.typicode.com/posts")
+      .then((posts) => posts.data)
+      .then((posts) => {
+        axios
+          .get("https://jsonplaceholder.typicode.com/users")
+          .then((users) => users.data)
+          .then((users) => {
+            posts.map((post) => {
+              const user = users.find((user) => user.id === post.userId);
+              post.username = user.name;
+              return post;
+            });
 
-        this.setState({
-          searchValue: '',
-          cached: posts,
-          results: posts
-        });
-      }).catch(err => {
-        console.log(`Can't load users: ${err}`);
+            this.setState({
+              searchValue: "",
+              cached: posts,
+              results: posts,
+            });
+          })
+          .catch((err) => {
+            console.log(`Can't load users: ${err}`);
+          });
       })
-    }).catch(err => {
-      console.log(`Can't load posts: ${err}`);
-    })
+      .catch((err) => {
+        console.log(`Can't load posts: ${err}`);
+      });
   }
 
   setResults = (value) => {
     var filtered = this.state.cached;
-    if (value.length > 0){
-      let regex = new RegExp(value.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'ig');
+    if (value.length > 0) {
+      let regex = new RegExp(
+        value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"),
+        "ig"
+      );
 
-      filtered = this.state.cached.filter(post => {
-        return regex.test(post.title) || regex.test(post.username) || regex.test(post.body);
+      filtered = this.state.cached.filter((post) => {
+        return (
+          regex.test(post.title) ||
+          regex.test(post.username) ||
+          regex.test(post.body)
+        );
       });
     }
-    this.setState({...this.state, results: filtered});
-  }
+    this.setState({ ...this.state, results: filtered });
+  };
+  toggleCard = (id) => {
+    const { toggleElementId } = this.state;
+    if (toggleElementId === id) {
+      this.setState({ toggleElementId: null });
+    } else {
+      this.setState({ toggleElementId: id });
+    }
+  };
+  deleteTask = (id) => {
+    const { results } = this.state;
+    const fltrdTsks = results.filter((x) => x.id !== id);
+    this.setState({
+      results: fltrdTsks,
+    });
+  };
+  addTask = () => {
+    const { results } = this.state;
+    let obj = {
+      id: results.length + 1,
+      username: `test ${results.length + 1}`,
+      body: `test body ${results.length + 1}`,
+      title: `test title ${results.length + 1}`,
+    };
+    this.setState({
+      results: [obj, ...results],
+    });
+  };
 
-  render(){
+  render() {
     return (
       <div className="AppSearcher">
         <div className="row">
@@ -59,14 +97,28 @@ export default class AppSearcher extends Component
         </div>
         <div className="row">
           <section className="col-12">
-            <h3>Results: <span data-testid="count">{this.state.results.length}</span></h3>
+            <h3>
+              Results:{" "}
+              <span data-testid="count">{this.state.results.length}</span>
+            </h3>
             <hr />
           </section>
-          {this.state.results.map(res => {
+          <button onClick={() => this.addTask()}>Add Task</button>
+          {this.state.results.map((res) => {
             return (
-              <ResultCard key={res.id} username={res.username} title={res.title} body={res.body} />
-            )}
-          )}
+              <ResultCard
+                key={res.id}
+                id={res.id}
+                username={res.username}
+                title={res.title}
+                body={res.body}
+                toggleCard={this.toggleCard}
+                toggleElementId={this.state.toggleElementId}
+                deleteTask={this.deleteTask}
+                addTask={this.addTask}
+              />
+            );
+          })}
         </div>
       </div>
     );
